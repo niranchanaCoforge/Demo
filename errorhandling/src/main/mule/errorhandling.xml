@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="17c9eade-e1ff-408d-8893-8037c18c52fa" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<flow name="errorhandlingFlow" doc:id="75bed180-07cf-488e-b692-08160725b363" >
+		<http:listener doc:name="Listener" doc:id="ae44c9ac-cb42-4c9a-a574-54e166e6e70a" config-ref="HTTP_Listener_config" path="/Error">
+			<http:error-response >
+				<http:body ><![CDATA[#[output text/plain ---  error.description]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<validation:is-true doc:name="Is true" doc:id="21c909d4-3f11-4b43-a983-ec546192e536" expression="#[payload.Age &gt; 30]" message='#["Age should be less than 30"]'>
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:BUSINESSERROR" />
+		</validation:is-true>
+		
+		<flow-ref doc:name="Flow Reference" doc:id="1938ebcc-2711-46cb-985b-d8556fa52bf0" name="errorhandlingSub_Flow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="555d2457-6a52-412d-82e2-226e2cfd426d" message='#["Flow Ended"]'/>
+	</flow>
+	<sub-flow name="errorhandlingSub_Flow" doc:id="dfaa4d4d-133c-4a9a-b351-1efc9c2b05ef" >
+	<try doc:name="Try" doc:id="68afaa77-db76-4a84-9aba-e6b2ce80160e" >
+			<choice doc:name="Choice" doc:id="02f1ef18-e0a4-47e1-95b4-0f0fed9230a4">
+			<when expression="#[payload.Age &lt;35]">
+				<raise-error doc:name="Raise error" doc:id="3cd8cd27-4eac-41ad-aee3-5006cb172289" type="APP:BUSINESSERROR" description="Age is greater than 30  but is also less than 35" />
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="Logger" doc:id="82039f1f-84f8-4e55-9d1c-d40c15e19bab" message='#["Age is greater than 35"]' />
+			</otherwise>
+		</choice>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="0e9f89d5-4c73-490a-b01f-9ce4a199cd17" type="APP:BUSINESSERROR">
+					<logger level="INFO" doc:name="Logger" doc:id="66d38653-d63f-4933-873f-3e94e225ef2a" message='#["Error occured due to Age check"]' />
+				</on-error-propagate>
+			
+</error-handler>
+		</try>
+	</sub-flow>
+</mule>
